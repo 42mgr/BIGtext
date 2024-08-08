@@ -57,9 +57,15 @@ function restoreCursorPosition(element, position) {
 }
 
 function adjustFontSize() {
-    const element = getElementById(ELEMENT_ID);
-    const debugOverlay = getElementById(DEBUG_OVERLAY_ID);
-    const parent = element.parentElement.parentElement;
+    const element = document.getElementById(ELEMENT_ID);
+    const debugOverlay = document.getElementById(DEBUG_OVERLAY_ID);
+    
+    if (!element) return; // Check if the element exists
+    
+    const parent = element.parentElement?.parentElement;
+    
+    if (!parent) return; // Check if the parent element exists
+    
     const parentWidth = parent.clientWidth;
     const parentHeight = parent.clientHeight;
 
@@ -74,21 +80,40 @@ function adjustFontSize() {
     const text = lines.join('\n');
     element.textContent = text;
 
-    // Decrease font size until it fits within the container
-    while (element.scrollWidth > parentWidth || element.scrollHeight > parentHeight) {
-        fontSize--;
-        element.style.fontSize = fontSize + 'px';
+    function adjust() {
+        // Decrease font size until it fits within the container
+        if (element.scrollWidth > parentWidth || element.scrollHeight > parentHeight) {
+            fontSize--;
+            element.style.fontSize = fontSize + 'px';
+
+            // Continue adjustment on the next animation frame
+            requestAnimationFrame(adjust);
+        } else {
+            // Restore cursor position once the adjustment is done
+            restoreCursorPosition(element, cursorPosition);
+            
+            // Optionally update debug overlay
+            if (debugOverlay) {
+                debugOverlay.textContent = `Font Size: ${fontSize}px`;
+            }
+        }
     }
 
-    // Set the font size
-    element.style.fontSize = fontSize + 'px';
-
-    // Restore cursor position
-    restoreCursorPosition(element, cursorPosition);
-
-    // Update debug overlay
-    //debugOverlay.textContent = `Font Size: ${fontSize}px`;
+    // Start the adjustment process
+    requestAnimationFrame(adjust);
 }
+
+// Optional: Debounce if you're calling adjustFontSize frequently (e.g., on resize)
+function debounce(func, wait) {
+    let timeout;
+    return function (...args) {
+        clearTimeout(timeout);
+        timeout = setTimeout(() => func.apply(this, args), wait);
+    };
+}
+
+// Usage: 
+// window.addEventListener('resize', debounce(adjustFontSize, 100));
 
 function clearText() {
     const element = getElementById(ELEMENT_ID);
@@ -216,7 +241,15 @@ function addEventListeners() {
     const clearBtn = getElementById(CLEAR_BUTTON_ID);
     const responsiveText = getElementById(ELEMENT_ID);
 
+
+    // Support both click and touch events for the history button
     historyBtn.addEventListener('click', renderHistoryPage);
+    historyBtn.addEventListener('touchstart', renderHistoryPage);
+
+    // Support both click and touch events for the clear button
+    clearBtn.addEventListener('click', clearText);
+    clearBtn.addEventListener('touchstart', clearText);
+
     window.addEventListener('resize', adjustFontSize);
     window.addEventListener('load', () => {
         adjustFontSize();
