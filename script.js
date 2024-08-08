@@ -94,6 +94,7 @@ function clearText() {
     const element = getElementById(ELEMENT_ID);
     const text = element?.innerText?.trim() ?? '';
     if (text != '') {
+        console.log('Text cleared:', text);
         textHistory.push(text);
         saveTextHistory();
         console.log('Text history saved:', text);
@@ -105,12 +106,26 @@ function clearText() {
 }
 
 function saveTextHistory() {
+    textHistory = textHistory.slice(-20);  // Keep only the last 20 entries
     localStorage.setItem('textHistory', JSON.stringify(textHistory));
+    console.log(textHistory);
+    const historyBtn = getElementById(HISTORY_BUTTON_ID);
+            if (textHistory.length === 0) {
+                historyBtn.style.display = 'none';
+            } else {
+                historyBtn.style.display = 'block';
+            }        const clearBtn = getElementById(CLEAR_BUTTON_ID);
 }
 
 function loadTextHistory() {
     const storedHistory = localStorage.getItem('textHistory');
     textHistory = storedHistory ? JSON.parse(storedHistory) : [];
+    const historyBtn = getElementById(HISTORY_BUTTON_ID);
+            if (textHistory.length === 0) {
+                historyBtn.style.display = 'none';
+            } else {
+                historyBtn.style.display = 'block';
+            }        const clearBtn = getElementById(CLEAR_BUTTON_ID);
 }
 
 function registerServiceWorker() {
@@ -127,7 +142,7 @@ function registerServiceWorker() {
     }
 }
 
-function renderMainContent() {
+function renderMainContent(selectedText) {
     console.log("renderMainContent()")
     currentPage = 'main';
     const contentDiv = getElementById(CONTENT_DIV_ID);
@@ -135,10 +150,15 @@ function renderMainContent() {
         contentDiv.innerHTML = previousContent;
 
         const historyBtn = getElementById(HISTORY_BUTTON_ID);
-        const clearBtn = getElementById(CLEAR_BUTTON_ID);
         const responsiveText = getElementById(ELEMENT_ID);
 
         addEventListeners();
+
+        if (typeof selectedText === 'string') {
+            selectedText = selectedText.trim();
+            responsiveText.textContent = selectedText;
+            adjustFontSize();
+        }
 
         responsiveText.focus();
         const textLength = responsiveText.textContent.length;
@@ -172,23 +192,31 @@ function renderHistoryPage() {
             </div>
         </div>
         `;
-        document.getElementById('entry-container').addEventListener('click')
         document.getElementById('back-button').addEventListener('click', renderMainContent);
         document.addEventListener('keydown', (event) => {
-        if (event.key === 'Escape') {
-            renderMainContent();
-        }
-    });
+            if (event.key === 'Escape') {
+                renderMainContent();
+            }
+        });
+
+        const entryContainer = contentDiv.querySelector('.entry-container');
+        entryContainer.addEventListener('click', (event) => {
+            const clickedEntry = event.target.closest('.entry');
+            if (clickedEntry) {
+                console.log(clickedEntry.textContent);
+                renderMainContent(clickedEntry.textContent);
+            }
+        });
     }
 }
 
 function addEventListeners() {
+    console.log(textHistory.length);
     const historyBtn = getElementById(HISTORY_BUTTON_ID);
     const clearBtn = getElementById(CLEAR_BUTTON_ID);
     const responsiveText = getElementById(ELEMENT_ID);
 
     historyBtn.addEventListener('click', renderHistoryPage);
-    clearBtn.addEventListener('click', clearText);
     window.addEventListener('resize', adjustFontSize);
     window.addEventListener('load', () => {
         adjustFontSize();
@@ -199,6 +227,16 @@ function addEventListeners() {
         if (event.key === 'Escape') {
             clearText();
         }
+    });
+
+    window.addEventListener('load', () => {
+        document.addEventListener('click', (event) => {
+            if (responsiveText.textContent === '') {
+                if (event.target !== historyBtn) {
+                    clearText();
+                }
+            }
+        });
     });
 }
 
