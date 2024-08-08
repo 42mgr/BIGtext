@@ -243,6 +243,6 @@ function addEventListeners() {
 // Initialization
 (function init() {
     loadTextHistory();
-    //registerServiceWorker();
+    registerServiceWorker();
     addEventListeners();
 })();
