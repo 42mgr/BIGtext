@@ -37,3 +37,8 @@ h1 {
     font-size: 24px;
     cursor: pointer;
 }
+
+#reponsive-text {
+    border: none;
+    outline: none;
+}
